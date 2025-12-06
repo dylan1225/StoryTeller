@@ -1,0 +1,91 @@
+# Tiny Test Configuration
+# ~3M parameters - ULTRA FAST for testing and debugging
+#
+# MODEL TYPE: Micro-scale decoder-only transformer
+# ARCHITECTURE: 4 layers × 192 hidden × 4 heads
+# CONTEXT: 128 tokens
+#
+# WHEN TO USE:
+# - Quick pipeline validation and debugging
+# - Testing new features or code changes
+# - Verifying data preprocessing works correctly
+# - Learning the training workflow in minutes
+# - CI/CD testing and automated testing
+#
+# EXPECTED TRAINING TIME: 2-5 minutes on consumer hardware
+# HARDWARE: Runs on any device (CPU, MPS, CUDA)
+# OUTPUT QUALITY: Very basic text generation, not coherent stories
+#
+# NOTE: This is NOT for actual story generation - use gpt2_small or larger for that
+
+model:
+  config_name: "tiny_test"
+  vocab_size: 50000
+  max_seq_length: 128  # Very short sequences
+  hidden_size: 192  # Tiny hidden size
+  num_layers: 4  # Minimal layers
+  num_attention_heads: 4
+  intermediate_size: 768  # Small FFN (4x hidden)
+  attention_dropout: 0.1
+  hidden_dropout: 0.1
+  positional_encoding: "rope"
+  activation: "gelu"
+  gradient_checkpointing: false  # Disabled for speed
+
+training:
+  # Data
+  train_data_path: "data/processed/train.txt"
+  val_data_path: "data/processed/val.txt"
+  tokenizer_path: "data/tokenizers/storyteller-tokenizer"  # Path to trained tokenizer
+  use_cached_dataset: true
+  cache_dir: "data/cache"
+
+  # Optimization
+  batch_size: 32  # Large batch for throughput
+  gradient_accumulation_steps: 1  # No accumulation
+  learning_rate: 8.0e-4  # Higher LR for fast convergence
+  weight_decay: 0.1
+  max_grad_norm: 1.0
+
+  # Schedule
+  num_epochs: 1  # Single epoch
+  warmup_steps: 20  # Minimal warmup
+  lr_scheduler: "cosine"
+
+  # Mixed precision
+  use_amp: true
+  amp_dtype: "float16"  # Faster than bfloat16 on most hardware
+
+  # Checkpointing
+  save_dir: "checkpoints/tiny_test"
+  save_every_n_steps: 500
+  keep_last_n_checkpoints: 1
+
+  # Logging - VERY FREQUENT
+  log_every_n_steps: 5  # Log every 5 steps for immediate feedback
+  eval_every_n_steps: 25  # Evaluate very frequently
+  use_mlflow: true
+  mlflow_experiment_name: "storyteller"
+  mlflow_run_name: "tiny_test"
+  mlflow_tracking_uri: "http://localhost:8080"
+  mlflow_log_system_metrics: true
+
+  # Evaluation metrics - Minimal for speed
+  evaluation:
+    num_eval_samples: 5  # Just a few samples
+    eval_max_length: 128
+    eval_temperature: 1.0
+    eval_top_k: 50
+    eval_top_p: 0.95
+
+  # Hardware
+  device: "smart"
+  num_workers: 4
+  pin_memory: true
+
+generation:
+  max_new_tokens: 128
+  temperature: 0.9
+  top_p: 0.95
+  top_k: 50
+  repetition_penalty: 1.1

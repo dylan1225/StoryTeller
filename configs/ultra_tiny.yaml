@@ -1,0 +1,91 @@
+# Ultra Tiny Configuration
+# ~1-2M parameters - TRULY FAST for testing (2-5 minutes actual)
+#
+# MODEL TYPE: Micro-scale decoder-only transformer
+# ARCHITECTURE: 2 layers × 128 hidden × 2 heads
+# CONTEXT: 64 tokens
+#
+# WHEN TO USE:
+# - Rapid pipeline validation and debugging (2-5 minutes ACTUAL)
+# - Testing new features or code changes
+# - Verifying training loop works correctly
+# - CI/CD testing and automated testing
+# - Sanity checking before longer runs
+#
+# EXPECTED TRAINING TIME: 2-5 minutes on consumer hardware (ACTUALLY)
+# HARDWARE: Runs on any device (CPU, MPS, CUDA)
+# OUTPUT QUALITY: Random text, not even basic generation
+#
+# NOTE: This is ONLY for testing the pipeline - use gpt2_small for real stories
+
+model:
+  config_name: "ultra_tiny"
+  vocab_size: 50000
+  max_seq_length: 64  # Very short sequences
+  hidden_size: 128  # Tiny hidden size
+  num_layers: 2  # Minimal layers
+  num_attention_heads: 2
+  intermediate_size: 512  # Small FFN (4x hidden)
+  attention_dropout: 0.1
+  hidden_dropout: 0.1
+  positional_encoding: "rope"
+  activation: "gelu"
+  gradient_checkpointing: false  # Disabled for speed
+
+training:
+  # Data
+  train_data_path: "data/processed/train.txt"
+  val_data_path: "data/processed/val.txt"
+  tokenizer_path: "data/tokenizers/storyteller-tokenizer"
+  use_cached_dataset: true
+  cache_dir: "data/cache"
+
+  # Optimization - FAST
+  batch_size: 16  # Smaller batch to fit in memory
+  gradient_accumulation_steps: 1  # No accumulation
+  learning_rate: 1.0e-3  # Higher LR for fast convergence
+  weight_decay: 0.1
+  max_grad_norm: 1.0
+
+  # Schedule - MINIMAL
+  num_epochs: 1  # Single epoch
+  warmup_steps: 10  # Minimal warmup
+  lr_scheduler: "cosine"
+
+  # Mixed precision
+  use_amp: true
+  amp_dtype: "float16"  # Faster than bfloat16 on most hardware
+
+  # Checkpointing
+  save_dir: "checkpoints/ultra_tiny"
+  save_every_n_steps: 10000  # Don't save during training (too short)
+  keep_last_n_checkpoints: 1
+
+  # Logging - DISABLED EVALUATION DURING TRAINING
+  log_every_n_steps: 50  # Log occasionally
+  eval_every_n_steps: 999999  # Disable eval during training (SPEED BOOST)
+  use_mlflow: true
+  mlflow_experiment_name: "storyteller"
+  mlflow_run_name: "ultra_tiny"
+  mlflow_tracking_uri: "http://localhost:8080"
+  mlflow_log_system_metrics: true
+
+  # Evaluation metrics - DISABLED during training, only final eval
+  evaluation:
+    num_eval_samples: 0  # No story generation (MAJOR SPEED BOOST)
+    eval_max_length: 64
+    eval_temperature: 1.0
+    eval_top_k: 50
+    eval_top_p: 0.95
+
+  # Hardware
+  device: "smart"
+  num_workers: 0  # Disable multiprocessing (can cause MPS memory issues)
+  pin_memory: true
+
+generation:
+  max_new_tokens: 64
+  temperature: 0.9
+  top_p: 0.95
+  top_k: 50
+  repetition_penalty: 1.1

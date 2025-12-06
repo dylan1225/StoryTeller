@@ -1,0 +1,89 @@
+# Custom GPT2+ Configuration
+# ~155M parameters (≈25% larger than GPT2-small)
+#
+# MODEL TYPE: GPT2-style decoder-only transformer
+# ARCHITECTURE: 15 layers × 896 hidden × 14 heads
+# CONTEXT: 1280 tokens (25% longer than GPT2-small)
+#
+# WHEN TO USE:
+# - You want a step up in quality from gpt2_small without jumping to base_model
+# - Training on roomy GPUs where you can afford a deeper/wider model
+# - Higher-quality narrative coherence and longer contexts
+#
+# EXPECTED TRAINING TIME: ~1.3-1.6× gpt2_small
+# HARDWARE: 32GB+ VRAM recommended (custom device will grab the best GPU)
+# OUTPUT QUALITY: Sharper coherence and longer-range storytelling than gpt2_small
+
+model:
+  config_name: "custom_gpt2_plus"
+  vocab_size: 50000
+  max_seq_length: 1280  # 25% longer context than GPT2-small
+  hidden_size: 896  # Wider hidden size for more capacity (head dim stays 64)
+  num_layers: 15  # +25% layers over GPT2-small
+  num_attention_heads: 14
+  intermediate_size: 3584  # 4 * hidden_size
+  attention_dropout: 0.08
+  hidden_dropout: 0.08
+  positional_encoding: "rope"
+  activation: "gelu"
+  gradient_checkpointing: true
+
+training:
+  # Data
+  train_data_path: "data/processed/train.txt"
+  val_data_path: "data/processed/val.txt"
+  tokenizer_path: "data/tokenizers/storyteller-tokenizer"
+  use_cached_dataset: true
+  cache_dir: "data/cache"
+
+  # Optimization
+  batch_size: 6  # Larger model; keep effective batch ≈30 with accumulation
+  gradient_accumulation_steps: 5
+  learning_rate: 2.5e-4  # Slightly lower LR for deeper model stability
+  weight_decay: 0.1
+  max_grad_norm: 1.0
+
+  # Schedule
+  num_epochs: 6  # 20-25% more steps vs gpt2_small
+  warmup_steps: 750
+  lr_scheduler: "cosine"
+
+  # Mixed precision
+  use_amp: true
+  amp_dtype: "bfloat16"
+
+  # Checkpointing
+  save_dir: "checkpoints/custom"
+  save_every_n_steps: 1000
+  keep_last_n_checkpoints: 3
+
+  # Logging
+  log_every_n_steps: 50
+  eval_every_n_steps: 200
+  use_mlflow: true
+  mlflow_experiment_name: "storyteller"
+  mlflow_run_name: "custom_25p"
+  mlflow_tracking_uri: "http://localhost:8080"
+  mlflow_log_system_metrics: true
+
+  # Evaluation metrics
+  evaluation:
+    num_eval_samples: 40
+    eval_max_length: 640
+    eval_temperature: 0.9
+    eval_top_k: 40
+    eval_top_p: 0.93
+
+  # Hardware
+  # Device options: "smart", "custom", "mps", "cuda", "cuda:0", "cpu"
+  # "custom" will aggressively claim the best CUDA GPU and aim to use full capacity
+  device: "custom"
+  num_workers: 8
+  pin_memory: true
+
+generation:
+  max_new_tokens: 640
+  temperature: 0.85
+  top_p: 0.93
+  top_k: 40
+  repetition_penalty: 1.1

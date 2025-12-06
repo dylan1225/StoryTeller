@@ -1,0 +1,94 @@
+# GPT2-Small Configuration
+# ~124M parameters - Production-quality story generation
+#
+# MODEL TYPE: GPT2-small decoder-only transformer (OpenAI architecture)
+# ARCHITECTURE: 12 layers × 768 hidden × 12 heads
+# CONTEXT: 1024 tokens
+#
+# WHEN TO USE:
+# - Serious story generation with high quality and coherence
+# - Replicating proven GPT2 architecture for comparison
+# - Creating a baseline model for research experiments
+# - Production storytelling applications
+# - Projects requiring balance of quality and training speed
+#
+# EXPECTED TRAINING TIME: 1-2 days on consumer hardware (32GB VRAM)
+# HARDWARE: 24GB+ VRAM (CUDA) or 32GB+ unified memory (MPS)
+# OUTPUT QUALITY: Coherent, creative stories with good structure and narrative flow
+#
+# IDEAL FOR: Best balance between training time and story quality
+# This is the RECOMMENDED config for most users wanting quality results
+
+model:
+  config_name: "gpt2_small"
+  vocab_size: 50000
+  max_seq_length: 1024  # GPT2-small's context window
+  hidden_size: 768  # GPT2-small standard
+  num_layers: 12  # GPT2-small standard
+  num_attention_heads: 12  # GPT2-small standard
+  intermediate_size: 3072  # 4 * hidden_size (GPT2 convention)
+  attention_dropout: 0.1
+  hidden_dropout: 0.1
+  positional_encoding: "rope"  # More efficient than learned embeddings
+  activation: "gelu"
+  gradient_checkpointing: true  # Save memory for 32GB VRAM
+
+training:
+  # Data
+  train_data_path: "data/processed/train.txt"
+  val_data_path: "data/processed/val.txt"
+  tokenizer_path: "data/tokenizers/storyteller-tokenizer"  # Path to trained tokenizer
+  use_cached_dataset: true  # Use cached data for faster startup
+  cache_dir: "data/cache"
+
+  # Optimization
+  batch_size: 8  # Fits comfortably in 32GB VRAM
+  gradient_accumulation_steps: 4  # Effective batch size: 32
+  learning_rate: 3.0e-4  # GPT2-small's default learning rate
+  weight_decay: 0.1
+  max_grad_norm: 1.0
+
+  # Schedule
+  num_epochs: 5  # Balance between quality and training time
+  warmup_steps: 500  # Gradual warmup for stability
+  lr_scheduler: "cosine"
+
+  # Mixed precision
+  use_amp: true
+  amp_dtype: "bfloat16"  # Use "float16" if bfloat16 not supported
+
+  # Checkpointing
+  save_dir: "checkpoints/gpt2_small"
+  save_every_n_steps: 1000
+  keep_last_n_checkpoints: 3
+
+  # Logging
+  log_every_n_steps: 50
+  eval_every_n_steps: 250
+  use_mlflow: true
+  mlflow_experiment_name: "storyteller"
+  mlflow_run_name: "gpt2_small"
+  mlflow_tracking_uri: "http://localhost:8080"
+  mlflow_log_system_metrics: true  # Log CPU, GPU, memory metrics
+
+  # Evaluation metrics (Phase 1)
+  evaluation:
+    num_eval_samples: 30  # Generate 30 stories for quality assessment
+    eval_max_length: 512  # Allow longer stories for evaluation
+    eval_temperature: 1.0  # Neutral temperature
+    eval_top_k: 50
+    eval_top_p: 0.95
+
+  # Hardware
+  # Device options: "smart", "mps", "cuda", "cuda:0", "cuda:1", "cpu"
+  # "smart" will intelligently select: MPS > available CUDA GPU > CPU
+  device: "smart"
+  num_workers: 6
+  pin_memory: true
+
+generation:
+  max_new_tokens: 512  # Allow longer story generation
+  temperature: 0.9  # Slightly lower for more coherent stories
+  top_p: 0.95
+  top_k: 50
+  repetition_penalty: 1.1

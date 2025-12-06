@@ -1,0 +1,93 @@
+# Fast Training Configuration
+# ~10M parameters - Rapid training demonstration model
+#
+# MODEL TYPE: Small decoder-only transformer
+# ARCHITECTURE: 6 layers × 256 hidden × 4 heads
+# CONTEXT: 256 tokens
+#
+# WHEN TO USE:
+# - Educational demonstrations of LLM training dynamics
+# - Quick experimentation with hyperparameters
+# - Understanding training metrics and loss curves
+# - Testing evaluation metrics implementation
+# - First-time users learning the training process
+#
+# EXPECTED TRAINING TIME: 10-20 minutes on consumer hardware
+# HARDWARE: Any device (CPU, MPS, CUDA) - 4-8GB VRAM recommended
+# OUTPUT QUALITY: Basic text patterns, simple sentences, not full stories
+#
+# IDEAL FOR: Students and educators to see a complete training cycle quickly
+
+model:
+  config_name: "fast"
+  vocab_size: 50000
+  max_seq_length: 256  # Shorter sequences for faster training
+  hidden_size: 256  # Small hidden size
+  num_layers: 6  # Few layers
+  num_attention_heads: 4  # Fewer heads
+  intermediate_size: 1024  # Small FFN
+  attention_dropout: 0.1
+  hidden_dropout: 0.1
+  positional_encoding: "rope"
+  activation: "gelu"
+  gradient_checkpointing: false  # Disabled for speed
+
+training:
+  # Data
+  train_data_path: "data/processed/train.txt"
+  val_data_path: "data/processed/val.txt"
+  tokenizer_path: "data/tokenizers/storyteller-tokenizer"  # Path to trained tokenizer
+  use_cached_dataset: true  # Use cached data for faster startup
+  cache_dir: "data/cache"
+
+  # Optimization
+  batch_size: 16  # Larger batch for faster throughput
+  gradient_accumulation_steps: 2  # Effective batch size: 32
+  learning_rate: 5.0e-4  # Higher LR for faster convergence
+  weight_decay: 0.1
+  max_grad_norm: 1.0
+
+  # Schedule
+  num_epochs: 2  # Just 2 epochs for quick demo
+  warmup_steps: 50  # Short warmup
+  lr_scheduler: "cosine"
+
+  # Mixed precision
+  use_amp: true
+  amp_dtype: "bfloat16"  # Use "float16" if bfloat16 not supported
+
+  # Checkpointing
+  save_dir: "checkpoints/fast_train"
+  save_every_n_steps: 100  # Save less frequently
+  keep_last_n_checkpoints: 2  # Keep fewer checkpoints
+
+  # Logging - FREQUENT for visibility
+  log_every_n_steps: 10  # Log every 10 steps
+  eval_every_n_steps: 50  # Evaluate every 50 steps
+  use_mlflow: true
+  mlflow_experiment_name: "storyteller"
+  mlflow_run_name: "fast_train"
+  mlflow_tracking_uri: "http://localhost:8080"
+  mlflow_log_system_metrics: true  # Log CPU, GPU, memory metrics
+
+  # Evaluation metrics (Phase 1) - Reduced for speed
+  evaluation:
+    num_eval_samples: 20  # Fewer samples for faster evaluation
+    eval_max_length: 256  # Shorter stories
+    eval_temperature: 1.0
+    eval_top_k: 50
+    eval_top_p: 0.95
+
+  # Hardware
+  # Device options: "smart", "mps", "cuda", "cuda:0", "cuda:1", "cpu"
+  # "smart" will intelligently select: MPS > available CUDA GPU > CPU
+  device: "smart"
+  num_workers: 10
+  pin_memory: true
+
+generation:
+  max_new_tokens: 256
+  temperature: 0.9
+  top_p: 0.95
+  top_k: 50
+  repetition_penalty: 1.1

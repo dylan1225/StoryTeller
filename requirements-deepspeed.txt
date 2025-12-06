@@ -1,0 +1,8 @@
+# DeepSpeed dependencies for advanced training optimization
+# Install with: pip install -r requirements-deepspeed.txt
+
+# Include base requirements
+-r requirements.txt
+
+# DeepSpeed for distributed training and memory optimization
+deepspeed>=0.10.0
